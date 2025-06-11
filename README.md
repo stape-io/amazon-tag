@@ -8,7 +8,7 @@ The **Amazon Ads Tag for GTM Server-Side** enables you to send conversion events
 2. Set your **Tag ID(s)** — available under *Events Manager > View Tag Code* in Amazon DSP.
 3. Choose your **Region**:
   - North & South America, Japan, Australia
-  -  Europe
+  - Europe
 4. Choose how to define your **Event Name**:
   - **Standard** — pick from predefined Amazon event names.
   - **Inherit from client** — maps incoming GA4 events to Amazon's expected schema.
