@@ -1,4 +1,6 @@
 homepage: 'https://stape.io/'
 versions:
+  - sha: 5638973e8479aa94586f098345f6da7807274ac4
+    changeNotes: Improve unit tests.
   - sha: 3f1e162d26241655a3f8dd34e8f21908e6961321
     changeNotes: Initial release.
