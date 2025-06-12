@@ -2098,6 +2098,11 @@ scenarios:
     });
 
     runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Measurement Token] [EU Region] amznAref cookie is not set AND not sent in
     request if it exists (UI field true)'
   code: |-
@@ -2132,6 +2137,11 @@ scenarios:
     });
 
     runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Measurement Token] [EU Region] amznAref cookie is renewed with only unexpired
     tokens but not with URL parameter and is not sent in request (UI field false)'
   code: |-
@@ -2173,6 +2183,11 @@ scenarios:
     });
 
     runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Measurement Token] amznAref cookie is removed if it only contains expired
     tokens (UI field false)'
   code: |-
@@ -2205,6 +2220,11 @@ scenarios:
     });
 
     runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Measurement Token] amznAref cookie is renewed with only unexpired tokens
     (UI field false)'
   code: |-
@@ -2239,6 +2259,11 @@ scenarios:
     });
 
     runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Measurement Token] amznAref cookie is kept under max tokens limit (UI field
     false)'
   code: |-
@@ -2283,6 +2308,11 @@ scenarios:
     });
 
     runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Measurement Token] arefs request parameter is not sent if amznAref cookie
     and URL parameter does not exist (UI field false)'
   code: |-
@@ -2311,6 +2341,11 @@ scenarios:
     });
 
     runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Advanced Matching] aatToken request is built succesfully (UI checkbox enabled)
     - Data from UI fields'
   code: "setAllMockData({\n  tagIdsList: [\n    { value: 'tagId0' }\n  ],\n  enableAdvancedMatching:\
@@ -2329,12 +2364,13 @@ scenarios:
     \ 'Content-Type': 'application/json' }\n  });\n  assertThat(JSON.parse(requestBody)).isEqualTo(expectedRequestBody);\n\
     \  \n  return Promise.create((resolve, reject) => {\n    resolve({ statusCode:\
     \ 200, body: '{\"AIPToken\":\"tokenFromRequest\",\"cookieExpiry\":1747955430456}'\
-    \ });\n  });\n});\n\nrunCode(mockData);"
+    \ });\n  });\n});\n\nrunCode(mockData);\n\ncallLater(() => {\n  assertApi('gtmOnSuccess').wasCalled();\n\
+    \  assertApi('gtmOnFailure').wasNotCalled();\n});"
 - name: '[Advanced Matching] aatToken request is built succesfully (UI checkbox enabled)
     - Data from UI fields fallbacks'
   code: "setAllMockData({\n  tagIdsList: [\n    { value: 'tagId0' }\n  ],\n  enableAdvancedMatching:\
     \ true,\n  userDataAttributesList: undefined\n});\nsetGetAllEventData();\n\nmock('getCookieValues',\
-    \ (cookieName) => {\n  return [];\n});\n\n\nconst expectedRequestBody = {\n  gdpr:\
+    \ (cookieName) => {\n  return [];\n});\n\nconst expectedRequestBody = {\n  gdpr:\
     \ 1,\n  gdprConsent: 'TCFv2 consent string',\n  hashedRecords: [\n    {\n    \
     \  type: 'email',\n      record: '973dfe463ec85785f5f95af5ba3906eedb2d931c24e69824a89ea65dba4e813b'\n\
     \    },\n    {\n      type: 'phonenumber',\n      record: 'be9673b570b05b32f7208280c9a7a05ea151f6b51d9d793000eed4a0cae528a7'\n\
@@ -2348,7 +2384,8 @@ scenarios:
     \ 'Content-Type': 'application/json' }\n  });\n  assertThat(JSON.parse(requestBody)).isEqualTo(expectedRequestBody);\n\
     \  \n  return Promise.create((resolve, reject) => {\n    resolve({ statusCode:\
     \ 200, body: '{\"AIPToken\":\"tokenFromRequest\",\"cookieExpiry\":1747955430456}'\
-    \ });\n  });\n});\n\nrunCode(mockData);"
+    \ });\n  });\n});\n\nrunCode(mockData);\n\ncallLater(() => {\n  assertApi('gtmOnSuccess').wasCalled();\n\
+    \  assertApi('gtmOnFailure').wasNotCalled();\n});"
 - name: '[Advanced Matching] aatToken is not fetched or used (UI checkbox disabled)'
   code: |-
     setAllMockData({
@@ -2375,6 +2412,10 @@ scenarios:
     runCode(mockData);
 
     assertApi('sendHttpRequest').wasNotCalled();
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Advanced Matching] aatToken is not fetched and is used from cookie (UI checkbox
     enabled)'
   code: |-
@@ -2402,6 +2443,10 @@ scenarios:
     runCode(mockData);
 
     assertApi('sendHttpRequest').wasNotCalled();
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Advanced Matching] aatToken is fetched and stored in cookie if not falsy,
     if cookie does not exist (UI checkbox enabled)'
   code: |-
@@ -2439,6 +2484,11 @@ scenarios:
     });
 
     runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Advanced Matching] aatToken is fetched and not stored in cookie and not
     sent if invalid, if cookie does not exist (UI checkbox enabled)'
   code: |-
@@ -2475,6 +2525,11 @@ scenarios:
     });
 
     runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Advanced Matching] Event request is sent even when Advanced Matching Request
     fails (UI checkbox enabled)'
   code: |-
@@ -2505,6 +2560,11 @@ scenarios:
     });
 
     runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Event] Event request is NOT sent when required fields are missing'
   code: |-
     setAllMockData({
@@ -2518,6 +2578,11 @@ scenarios:
     runCode(mockData);
 
     assertApi('sendHttpGet').wasNotCalled();
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasNotCalled();
+      assertApi('gtmOnFailure').wasCalled();
+    });
 - name: '[Event] Event request base URL is correct based on Tag Region'
   code: "setAllMockData({\n  tagIdsList: [\n    { value: 'tagId0' }\n  ],\n  tagRegion:\
     \ 'NA',\n  eventType: 'standard',\n  eventNameStandard: 'Off-AmazonPurchases',\n\
@@ -2528,7 +2593,9 @@ scenarios:
     \ (requestUrl) => {\n    const parsedRequestUrl = parseUrl(requestUrl);\n    const\
     \ requestBaseUrl = parsedRequestUrl.origin + parsedRequestUrl.pathname;\n    assertThat(requestBaseUrl).isEqualTo(expectedRequestBaseUrl[tagRegion]);\n\
     \    return Promise.create((resolve, reject) => {\n      resolve({ statusCode:\
-    \ 200 });\n    });\n  });\n  \n  runCode(originalMockDataCopy);\n});"
+    \ 200 });\n    });\n  });\n  \n  runCode(originalMockDataCopy);\n  \n  callLater(()\
+    \ => {\n    assertApi('gtmOnSuccess').wasCalled();\n    assertApi('gtmOnFailure').wasNotCalled();\n\
+    \  });\n});"
 - name: '[Event] Event request is successfully built and sent - Data from UI fields'
   code: |-
     setAllMockData({
@@ -2568,9 +2635,14 @@ scenarios:
     });
 
     runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Event] Event request is successfully built and sent - Data from UI fields
     fallbacks'
-  code: |+
+  code: |-
     setGetAllEventData({});
 
     const expectedRequestHostname = 'https://s.amazon-adsystem.com/iu3';
@@ -2599,6 +2671,10 @@ scenarios:
 
     runCode(mockData);
 
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: '[Event] Event request is successfully built and sent for multiple Tag IDs'
   code: "setAllMockData({\n  tagIdsList: [\n    { value: 'tagId0' },\n    { value:\
     \ 'tagId1' }\n  ],\n  tagRegion: 'NA',\n  eventType: 'standard',\n  eventNameStandard:\
@@ -2610,7 +2686,9 @@ scenarios:
     \ = 0;\nmock('sendHttpGet', (requestUrl) => {\n  const parsedRequestUrl = parseUrl(requestUrl);\n\
     \  const requestParameters = parsedRequestUrl.searchParams;\n  assertThat(requestParameters.pid).isEqualTo(tagIds[sendHttpGetExecutions]);\n\
     \  \n  sendHttpGetExecutions++;\n  \n  return Promise.create((resolve, reject)\
-    \ => {\n    resolve({ statusCode: 200 });\n  });\n});\n\nrunCode(mockData);"
+    \ => {\n    resolve({ statusCode: 200 });\n  });\n});\n\nrunCode(mockData);\n\n\
+    callLater(() => {\n  assertApi('gtmOnSuccess').wasCalled();\n  assertApi('gtmOnFailure').wasNotCalled();\n\
+    });"
 - name: '[Event] sendPixelFromBrowser is called when the Event request produces a
     30X redirect'
   code: |-
@@ -2630,17 +2708,21 @@ scenarios:
       });
     });
 
-    mock('sendPixelFromBrowser', (url) => {
-      assertThat(url).isEqualTo(sendPixelFromBrowserUrl);
-    });
-
     runCode(mockData);
+
+    callLater(() => {
+      assertApi('sendPixelFromBrowser').wasCalledWith(sendPixelFromBrowserUrl);
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: Should log to console, if the 'Always log to console' option is selected
   code: "setAllMockData({\n  logType: 'always'\n});\n\nconst expectedDebugMode = true;\n\
     mock('getContainerVersion', () => {\n  return {\n    debugMode: expectedDebugMode\n\
     \  };\n}); \n\nmock('logToConsole', (logData) => {\n  const parsedLogData = JSON.parse(logData);\n\
     \  requiredConsoleKeys.forEach(p => assertThat(parsedLogData[p]).isDefined());\n\
-    });\n\nrunCode(mockData);\n\nassertApi('logToConsole').wasCalled();"
+    });\n\nrunCode(mockData);\n\ncallLater(() => {\n  assertApi('logToConsole').wasCalled();\n\
+    \  assertApi('gtmOnSuccess').wasCalled();\n  assertApi('gtmOnFailure').wasNotCalled();\n\
+    });"
 - name: Should log to console, if the 'Log during debug and preview' option is selected
     AND is on preview mode
   code: |-
@@ -2663,12 +2745,18 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('logToConsole').wasCalled();
+    callLater(() => {
+      assertApi('logToConsole').wasCalled();
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: Should NOT log to console, if the 'Log during debug and preview' option is
     selected AND is NOT on preview mode
   code: "setAllMockData({\n  logType: 'debug'\n});\n\nconst expectedDebugMode = false;\n\
     mock('getContainerVersion', () => {\n  return {\n    debugMode: expectedDebugMode\n\
-    \  };\n}); \n\nrunCode(mockData);\n\nassertApi('logToConsole').wasNotCalled();"
+    \  };\n}); \n\nrunCode(mockData);\n\ncallLater(() => {\n  assertApi('logToConsole').wasNotCalled();\n\
+    \  assertApi('gtmOnSuccess').wasCalled();\n  assertApi('gtmOnFailure').wasNotCalled();\n\
+    });"
 - name: Should NOT log to console, if the 'Do not log' option is selected
   code: |-
     setAllMockData({
@@ -2677,7 +2765,11 @@ scenarios:
 
     runCode(mockData);
 
-    assertApi('logToConsole').wasNotCalled();
+    callLater(() => {
+      assertApi('logToConsole').wasNotCalled();
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 - name: Should log to BQ, if the 'Log to BigQuery' option is selected
   code: "setAllMockData({\n  bigQueryLogType: 'always'\n});\n\n// assertApi doesn't\
     \ work for 'BigQuery.insert()'.\n// Ref: https://gtm-gear.com/posts/gtm-templates-testing/\n\
@@ -2685,23 +2777,26 @@ scenarios:
     \ => { \n      assertThat(connectionInfo).isDefined();\n      assertThat(rows).isArray();\n\
     \      assertThat(rows).hasLength(1);\n      requiredBqKeys.forEach(p => assertThat(rows[0][p]).isDefined());\n\
     \      assertThat(options).isEqualTo(expectedBqOptions);\n      return Promise.create((resolve,\
-    \ reject) => {\n        resolve();\n      });\n    }\n  };\n});\n\nrunCode(mockData);"
+    \ reject) => {\n        resolve();\n      });\n    }\n  };\n});\n\nrunCode(mockData);\n\
+    \ncallLater(() => {\n  assertApi('gtmOnSuccess').wasCalled();\n  assertApi('gtmOnFailure').wasNotCalled();\n\
+    });"
 - name: Should NOT log to BQ, if the 'Do not log to BigQuery' option is selected
   code: "setAllMockData({\n  bigQueryLogType: 'no'\n});\n\n// assertApi doesn't work\
     \ for 'BigQuery.insert()'.\n// Ref: https://gtm-gear.com/posts/gtm-templates-testing/\n\
     mock('BigQuery', () => {\n  return { \n    insert: (connectionInfo, rows, options)\
     \ => { \n      fail('BigQuery.insert should not have been called.');\n      return\
     \ Promise.create((resolve, reject) => {\n        resolve();\n      });\n    }\n\
-    \  };\n});\n\nrunCode(mockData);\n"
+    \  };\n});\n\nrunCode(mockData);\n\ncallLater(() => {\n  assertApi('gtmOnSuccess').wasCalled();\n\
+    \  assertApi('gtmOnFailure').wasNotCalled();\n});"
 setup: "const JSON = require('JSON');\nconst Promise = require('Promise');\nconst\
   \ parseUrl = require('parseUrl');\nconst makeInteger = require('makeInteger');\n\
-  \nconst mergeObj = (target, source) => {\n  for (const key in source) {\n    if\
-  \ (source.hasOwnProperty(key)) target[key] = source[key];\n  }\n  return target;\n\
-  };\n\nconst setGetAllEventData = (objToBeMerged) => {\n  mock('getAllEventData',\
-  \ mergeObj({\n    'x-ga-protocol_version': '2',\n    'x-ga-measurement_id': 'G-123ABC',\n\
-  \    'x-ga-gtm_version': '45je55e1za200',\n    'x-ga-page_id': 1747422523211,\n\
-  \    'x-ga-gcd': '13l3l3l3l1l1',\n    'x-ga-npa': '0',\n    'x-ga-dma': '0',\n \
-  \   'x-ga-mp2-tag_exp':\n      '101509157~103116025~103130498~103130500~103136993~103136995~103200001~103207802~103211513~103233427~103252644~103252646~103263073~103301114~103301116',\n\
+  const callLater = require('callLater');\n\nconst mergeObj = (target, source) =>\
+  \ {\n  for (const key in source) {\n    if (source.hasOwnProperty(key)) target[key]\
+  \ = source[key];\n  }\n  return target;\n};\n\nconst setGetAllEventData = (objToBeMerged)\
+  \ => {\n  mock('getAllEventData', mergeObj({\n    'x-ga-protocol_version': '2',\n\
+  \    'x-ga-measurement_id': 'G-123ABC',\n    'x-ga-gtm_version': '45je55e1za200',\n\
+  \    'x-ga-page_id': 1747422523211,\n    'x-ga-gcd': '13l3l3l3l1l1',\n    'x-ga-npa':\
+  \ '0',\n    'x-ga-dma': '0',\n    'x-ga-mp2-tag_exp':\n      '101509157~103116025~103130498~103130500~103136993~103136995~103200001~103207802~103211513~103233427~103252644~103252646~103263073~103301114~103301116',\n\
   \    client_id: 'AUJctU7H7hBB/aMuhE4pKwGu5DWDdklg5abyyyn8i/I=.1747154479',\n   \
   \ 'x-ga-ecid': '1294673677',\n    language: 'en-us',\n    screen_resolution: '1512x982',\n\
   \    event_location: { country: 'BR', region: 'SP' },\n    event_id: '101509157~103116025~103130498',\n\
