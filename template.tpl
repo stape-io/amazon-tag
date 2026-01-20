@@ -1,4 +1,4 @@
-___TERMS_OF_SERVICE___
+﻿___TERMS_OF_SERVICE___
 
 By creating or modifying this file you agree to Google Tag Manager's Community
 Template Gallery Developer Terms of Service available at
@@ -23,7 +23,7 @@ ___INFO___
   ],
   "brand": {
     "id": "brand_dummy",
-    "displayName": "",
+    "displayName": "stape.io",
     "thumbnail": "data:image/png;base64,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\u003d\u003d"
   },
   "description": "Amazon Ads server-to-server conversion tracking.",
@@ -677,14 +677,13 @@ ___TEMPLATE_PARAMETERS___
   },
   {
     "type": "GROUP",
-    "name": "consentSettingsGroup",
-    "displayName": "Consent Settings",
+    "name": "tagExecutionConsentSettingsGroup",
+    "displayName": "Tag Execution Consent Settings",
     "groupStyle": "ZIPPY_CLOSED",
     "subParams": [
       {
         "type": "RADIO",
         "name": "adStorageConsent",
-        "displayName": "",
         "radioItems": [
           {
             "value": "optional",
@@ -692,7 +691,8 @@ ___TEMPLATE_PARAMETERS___
           },
           {
             "value": "required",
-            "displayValue": "Send data in case marketing consent given"
+            "displayValue": "Send data in case marketing consent given",
+            "help": "Aborts the tag execution if marketing consent (\u003ci\u003ead_storage\u003c/i\u003e Google Consent Mode or Stape\u0027s Data Tag parameter) is not given."
           }
         ],
         "simpleValueType": true,
@@ -2869,4 +2869,5 @@ setup: "const JSON = require('JSON');\nconst Promise = require('Promise');\ncons
 ___NOTES___
 
 Created on 6/11/2025, 12:20:30 PM
+
 
