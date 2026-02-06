@@ -5,14 +5,18 @@ The **Amazon Ads Tag for GTM Server-Side** enables you to send conversion events
 ## How to Use
 
 1. Add the **Amazon CAPI Tag** to your Server GTM container from the Template Gallery or by importing the template file.
-2. Set your **Tag ID(s)** — available under *Events Manager > View Tag Code* in Amazon DSP.
+2. Set your **Tag ID(s)** — available under _Events Manager > View Tag Code_ in Amazon DSP.
 3. Choose your **Region**:
-  - North & South America, Japan, Australia
-  - Europe
+
+- North & South America, Japan, Australia
+- Europe
+
 4. Choose how to define your **Event Name**:
-  - **Standard** — pick from predefined Amazon event names.
-  - **Inherit from client** — maps incoming GA4 events to Amazon's expected schema.
-  - **Custom** — provide your own custom event name.
+
+- **Standard** — pick from predefined Amazon event names.
+- **Inherit from client** — maps incoming GA4 events to Amazon's expected schema.
+- **Custom** — provide your own custom event name.
+
 5. Optionally add **Event Attributes**, including extra attributes specific to “Off-AmazonPurchases” events.
 6. Enable **Advanced Matching** to securely send user identifiers and enrich attribution.
 7. Use a **Match ID** to link interactions across sessions and platforms without exposing personal data.
@@ -26,6 +30,7 @@ The **Amazon Ads Tag for GTM Server-Side** enables you to send conversion events
 ### Standard
 
 Pick from the following predefined events:
+
 - `AddToShoppingCart`
 - `Checkout`
 - `Contact`
@@ -41,6 +46,7 @@ Pick from the following predefined events:
 ### Inherit from Client
 
 Automatically maps GA4 events to Amazon equivalents:
+
 - `page_view`, `gtm.dom` → `PageView`
 - `sign_up` → `Signup`
 - `generate_lead` → `Lead`
@@ -73,11 +79,13 @@ Advanced Matching lets you enrich conversion data with user identifiers like **e
 **Match ID** is a privacy-safe, advertiser-defined identifier that links user interactions across different sessions, devices, and even channels without exposing personally identifiable information (PII).
 
 Ideal for:
+
 - Brands with **strict internal privacy policies**.
 - Businesses with **multi-step customer journeys**.
 - Advertisers handling **offline or login-wall conversions**.
 
 **How it works:**
+
 - You set a persistent `Match ID` during an initial user interaction.
 - This ID is mapped to the user in Amazon’s systems (via hashed PII or third-party cookies if available).
 - Later, during a conversion event (e.g., purchase), the same `Match ID` is sent again via the event.
@@ -89,6 +97,10 @@ Ideal for:
 - Allows or suppresses cookie setting based on configuration.
 - Tokens are managed with expiration policies and region-specific behavior.
 - Only active in **NA** region (never sent or stored in **EU** region).
+
+## Useful links:
+
+- [Step-by-step guide on how to configure Amazon tag](https://stape.io/blog/amazon-server-side-tracking-conversions-api)
 
 ## Open Source
 
