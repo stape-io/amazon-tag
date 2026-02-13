@@ -262,6 +262,32 @@ ___TEMPLATE_PARAMETERS___
   },
   {
     "type": "SELECT",
+    "name": "enableThirdPartyCookieSyncing",
+    "displayName": "Enabled cookie syncing from browser",
+    "macrosInSelect": true,
+    "selectItems": [
+      {
+        "value": true,
+        "displayValue": "true"
+      },
+      {
+        "value": false,
+        "displayValue": "false"
+      }
+    ],
+    "simpleValueType": true,
+    "help": "Enable 3rd-party cookie syncing from the browser for improved user matching.\n\u003cbr/\u003e\u003cbr/\u003e\n⚠️ This feature is unavailable if the \u003ci\u003eUse Optimistic Scenario\u003c/i\u003e configuration is enabled.\n\u003cbr/\u003e\u003cbr/\u003e\nNote: In the Chrome DevTools Network panel, you may see an \u003ci\u003eERR_BLOCKED_BY_ORB\u003c/i\u003e error associated with this request. This is expected due to a response type mismatch; however, the request is still processed successfully.",
+    "defaultValue": true,
+    "enablingConditions": [
+      {
+        "paramName": "useOptimisticScenario",
+        "paramValue": true,
+        "type": "NOT_EQUALS"
+      }
+    ]
+  },
+  {
+    "type": "SELECT",
     "name": "useOptimisticScenario",
     "displayName": "Use Optimistic Scenario",
     "macrosInSelect": true,
@@ -801,10 +827,12 @@ ___TEMPLATE_PARAMETERS___
 ___SANDBOXED_JS_FOR_SERVER___
 
 const BigQuery = require('BigQuery');
+const computeEffectiveTldPlusOne = require('computeEffectiveTldPlusOne');
 const encodeUriComponent = require('encodeUriComponent');
 const getAllEventData = require('getAllEventData');
 const getContainerVersion = require('getContainerVersion');
 const getCookieValues = require('getCookieValues');
+const getEventData = require('getEventData');
 const getRequestHeader = require('getRequestHeader');
 const getTimestampMillis = require('getTimestampMillis');
 const getType = require('getType');
@@ -824,18 +852,10 @@ const sha256Sync = require('sha256Sync');
 /*==============================================================================
 ==============================================================================*/
 
-const traceId = getRequestHeader('trace-id');
-
 const eventData = getAllEventData();
-
 const useOptimisticScenario = isUIFieldTrue(data.useOptimisticScenario);
 
-if (!isConsentGivenOrNotRequired()) {
-  return data.gtmOnSuccess();
-}
-
-const url = eventData.page_location || getRequestHeader('referer');
-if (url && url.lastIndexOf('https://gtm-msr.appspot.com/', 0) === 0) {
+if (shouldExitEarly(data, eventData)) {
   return data.gtmOnSuccess();
 }
 
@@ -859,7 +879,7 @@ function mapEvent(data, eventData) {
   };
 
   mappedData = addGDPRData(data, mappedData);
-  mappedData = addMeasurementToken(data, mappedData);
+  mappedData = addMeasurementToken(data, eventData, mappedData);
   mappedData = addEventDetailsData(data, eventData, mappedData);
 
   return mappedData;
@@ -953,8 +973,8 @@ function removeAnyExpiredMeasurementTokens(data, tokens, measurementTokenTTL) {
   return unexpiredMeasurementTokens;
 }
 
-function handleMeasurementTokenFromURL(data, tokens, measurementTokenTTL) {
-  const parsedUrl = parseUrl(url);
+function handleMeasurementTokenFromURL(data, eventData, tokens, measurementTokenTTL) {
+  const parsedUrl = parseUrl(getUrl(eventData));
   if (!parsedUrl || !parsedUrl.searchParams || !parsedUrl.searchParams.aref) return;
 
   const measurementTokenFromUrl = parsedUrl.searchParams.aref;
@@ -980,7 +1000,7 @@ function handleMeasurementTokenFromURL(data, tokens, measurementTokenTTL) {
   return updatedTokens;
 }
 
-function addMeasurementToken(data, mappedData) {
+function addMeasurementToken(data, eventData, mappedData) {
   const measurementTokenTTL = 2592000000; // 30 days in milliseconds
 
   const existingTokens = getMeasurementTokenArray();
@@ -992,7 +1012,12 @@ function addMeasurementToken(data, mappedData) {
   );
 
   if (data.tagRegion === 'NA') {
-    const updatedTokens = handleMeasurementTokenFromURL(data, unexpiredTokens, measurementTokenTTL);
+    const updatedTokens = handleMeasurementTokenFromURL(
+      data,
+      eventData,
+      unexpiredTokens,
+      measurementTokenTTL
+    );
 
     if (updatedTokens)
       mappedData.arefs = measurementTokenTimestampPairsArrayToCookie(updatedTokens);
@@ -1138,7 +1163,6 @@ function buildAIPTokenConfig(data, eventData) {
     log({
       Name: 'Amazon',
       Type: 'Message',
-      TraceId: traceId,
       EventName: 'AIP Token Request',
       Message: 'Request was not sent.',
       Reason: 'If GDPR consent is enabled, the TCFv2 consent string must be set.'
@@ -1173,7 +1197,6 @@ function fetchAIPToken(data, eventData) {
   log({
     Name: 'Amazon',
     Type: 'Request',
-    TraceId: traceId,
     EventName: 'AIP Token Request',
     RequestMethod: 'POST',
     RequestUrl: requestUrl,
@@ -1192,7 +1215,6 @@ function fetchAIPToken(data, eventData) {
       log({
         Name: 'Amazon',
         Type: 'Response',
-        TraceId: traceId,
         EventName: 'AIP Token Request',
         ResponseStatusCode: result.statusCode,
         ResponseHeaders: result.headers,
@@ -1219,7 +1241,6 @@ function fetchAIPToken(data, eventData) {
       log({
         Name: 'Amazon',
         Type: 'Message',
-        TraceId: traceId,
         EventName: 'AIP Token Request',
         Message: 'Request failed or timed out.',
         Reason: JSON.stringify(result)
@@ -1246,7 +1267,6 @@ function validateParameterName(parameter, mappedData) {
   log({
     Name: 'Amazon',
     Type: 'Message',
-    TraceId: traceId,
     EventName: mappedData.event,
     Message: 'Request was not sent.',
     Reason: 'Parameter "' + parameter + '" is invalid: length greater than ' + maxLength
@@ -1264,7 +1284,6 @@ function validateParameterValue(parameterValue, mappedData) {
   log({
     Name: 'Amazon',
     Type: 'Message',
-    TraceId: traceId,
     EventName: mappedData.event,
     Message: 'Request was not sent.',
     Reason: 'Parameter value "' + parameterValue + '" is invalid: length greater than ' + maxLength
@@ -1324,24 +1343,65 @@ function getRequestUrlParameters(mappedData) {
   return requestParametersList.join('&');
 }
 
-function trackEvent(mappedData, requestUrl) {
+function trackEvent(mappedData, requestUrl, tagId) {
   log({
     Name: 'Amazon',
     Type: 'Request',
-    TraceId: traceId,
     EventName: mappedData.event,
     RequestMethod: 'GET',
-    RequestUrl: requestUrl
+    RequestUrl: requestUrl,
+    Message: 'Tag ID: ' + tagId
   });
 
-  return sendHttpGet(requestUrl).then((result) => {
-    if (result.statusCode >= 300 && result.statusCode < 400) {
-      // 3rd party cookie 'ad-id' sync
-      sendPixelFromBrowser(result.headers.location);
-    }
+  return sendHttpGet(requestUrl)
+    .then((result) => {
+      log({
+        Name: 'Amazon',
+        Type: 'Response',
+        EventName: mappedData.event,
+        ResponseStatusCode: result.statusCode,
+        ResponseHeaders: result.headers,
+        ResponseBody: result.body,
+        Message: 'Tag ID: ' + tagId
+      });
 
-    return result;
-  });
+      if (result.statusCode < 200 || result.statusCode >= 400) return false;
+
+      if (
+        result.statusCode >= 300 &&
+        result.statusCode < 400 &&
+        result.headers.location &&
+        isUIFieldTrue(data.enableThirdPartyCookieSyncing) &&
+        !isUIFieldTrue(data.useOptimisticScenario)
+      ) {
+        // 3rd party cookie 'ad-id' sync
+        // e.g. https://s.amazon-adsystem.com/iu3?pid=<pid>&event=PageView&eventSource=gtm-server-side&ts=1770997052030&[...]&dcc=t
+        const sendPixelFromBrowserSuccess = sendPixelFromBrowser(result.headers.location);
+        if (!sendPixelFromBrowserSuccess) {
+          log({
+            Name: 'Amazon',
+            Type: 'Message',
+            EventName: mappedData.event,
+            Message:
+              'The requestor does not support sending pixels from browser. 3rd party cookies will not be collected as a result. Tag ID: ' +
+              tagId
+          });
+        }
+      }
+
+      return true;
+    })
+    .catch((result) => {
+      log({
+        Name: 'Amazon',
+        Type: 'Response',
+        EventName: mappedData.event,
+        Message: 'Request failed or timed out. Tag ID: ' + tagId,
+        Reason: JSON.stringify(result)
+      });
+
+      return false;
+    });
 }
 
 function sendEventRequests(data, eventData, aipToken) {
@@ -1353,7 +1413,6 @@ function sendEventRequests(data, eventData, aipToken) {
     log({
       Name: 'Amazon',
       Type: 'Message',
-      TraceId: traceId,
       EventName: mappedData.event,
       Message: 'Request was not sent.',
       Reason: 'One or more required properties are missing: ' + missingParameters.join(' or ')
@@ -1373,45 +1432,27 @@ function sendEventRequests(data, eventData, aipToken) {
     const tagIdValue = tagId.value;
     if (!tagIdValue) return;
     const requestUrl = requestBaseUrl + '?pid=' + tagIdValue + '&' + requestUrlParameters;
-    eventRequests.push(trackEvent(mappedData, requestUrl));
+    eventRequests.push(trackEvent(mappedData, requestUrl, tagIdValue));
   });
 
   Promise.all(eventRequests)
     .then((results) => {
-      let someRequestFailed = false;
-
-      results.forEach((result) => {
-        log({
-          Name: 'Amazon',
-          Type: 'Response',
-          TraceId: traceId,
-          EventName: mappedData.event,
-          ResponseStatusCode: result.statusCode,
-          ResponseHeaders: result.headers,
-          ResponseBody: result.body
-        });
-
-        if (result.statusCode < 200 || result.statusCode >= 400) {
-          someRequestFailed = true;
-        }
-      });
-
       if (!useOptimisticScenario) {
-        if (someRequestFailed) data.gtmOnFailure();
-        else data.gtmOnSuccess();
+        const someRequestFailed = results.some((success) => !success);
+        if (someRequestFailed) return data.gtmOnFailure();
+        return data.gtmOnSuccess();
       }
     })
     .catch((result) => {
       log({
         Name: 'Amazon',
         Type: 'Message',
-        TraceId: traceId,
         EventName: mappedData.event,
-        Message: 'Some request may have failed or timed out.',
+        Message: 'Something went wrong.',
         Reason: JSON.stringify(result)
       });
 
-      if (!useOptimisticScenario) data.gtmOnFailure();
+      if (!useOptimisticScenario) return data.gtmOnFailure();
     });
 }
 
@@ -1425,6 +1466,19 @@ function areThereRequiredParametersMissing(requestData) {
 /*==============================================================================
   Helpers
 ==============================================================================*/
+
+function shouldExitEarly(data, eventData) {
+  if (!isConsentGivenOrNotRequired(data, eventData)) return true;
+
+  const url = getUrl(eventData);
+  if (url && url.lastIndexOf('https://gtm-msr.appspot.com/', 0) === 0) return true;
+
+  return false;
+}
+
+function getUrl(eventData) {
+  return eventData.page_location || eventData.page_referrer || getRequestHeader('referer');
+}
 
 function replaceNonAlphanumeric(input) {
   if (getType(input) !== 'string') return input;
@@ -1507,18 +1561,18 @@ function isUIFieldTrue(field) {
 
 function isValidValue(value) {
   const valueType = getType(value);
-  return valueType !== 'null' && valueType !== 'undefined' && value !== '';
+  return valueType !== 'null' && valueType !== 'undefined' && value !== '' && value === value;
 }
 
 function enc(data) {
-  if (data === undefined || data === null) data = '';
+  if (['null', 'undefined'].indexOf(getType(data)) !== -1) data = '';
   return encodeUriComponent(makeString(data));
 }
 
 function setCookieValue(name, value, maxAge) {
   const overrideCookieSettings = isUIFieldTrue(data.overrideCookieSettings);
   setCookie(name, value, {
-    domain: overrideCookieSettings ? data.cookieDomain : 'auto',
+    domain: getCookieDomain(data),
     sameSite: 'strict',
     path: '/',
     secure: true,
@@ -1527,7 +1581,15 @@ function setCookieValue(name, value, maxAge) {
   });
 }
 
-function isConsentGivenOrNotRequired() {
+function getCookieDomain(data) {
+  const overrideCookieSettings = isUIFieldTrue(data.overrideCookieSettings);
+  return !overrideCookieSettings || !data.cookieDomain || data.cookieDomain === 'auto'
+    ? computeEffectiveTldPlusOne(getEventData('page_location') || getRequestHeader('referer')) ||
+        'auto'
+    : data.cookieDomain;
+}
+
+function isConsentGivenOrNotRequired(data, eventData) {
   if (data.adStorageConsent !== 'required') return true;
   if (eventData.consent_state) return !!eventData.consent_state.ad_storage;
   const xGaGcs = eventData['x-ga-gcs'] || ''; // x-ga-gcs is a string like "G110"
@@ -1538,6 +1600,8 @@ function log(rawDataToLog) {
   const logDestinationsHandlers = {};
   if (determinateIsLoggingEnabled()) logDestinationsHandlers.console = logConsole;
   if (determinateIsLoggingEnabledForBigQuery()) logDestinationsHandlers.bigQuery = logToBigQuery;
+
+  rawDataToLog.TraceId = getRequestHeader('trace-id');
 
   const keyMappings = {
     // No transformation for Console is needed.
@@ -1590,9 +1654,7 @@ function logToBigQuery(dataToLog) {
     dataToLog[p] = JSON.stringify(dataToLog[p]);
   });
 
-  const bigquery =
-    getType(BigQuery) === 'function' ? BigQuery() /* Only during Unit Tests */ : BigQuery;
-  bigquery.insert(connectionInfo, [dataToLog], { ignoreUnknownValues: true });
+  BigQuery.insert(connectionInfo, [dataToLog], { ignoreUnknownValues: true });
 }
 
 function determinateIsLoggingEnabled() {
@@ -2687,8 +2749,89 @@ scenarios:
     \  const requestParameters = parsedRequestUrl.searchParams;\n  assertThat(requestParameters.pid).isEqualTo(tagIds[sendHttpGetExecutions]);\n\
     \  \n  sendHttpGetExecutions++;\n  \n  return Promise.create((resolve, reject)\
     \ => {\n    resolve({ statusCode: 200 });\n  });\n});\n\nrunCode(mockData);\n\n\
-    callLater(() => {\n  assertApi('gtmOnSuccess').wasCalled();\n  assertApi('gtmOnFailure').wasNotCalled();\n\
+    callLater(() => {\n  assertThat(sendHttpGetExecutions).isEqualTo(tagIds.length);\n\
+    \  assertApi('gtmOnSuccess').wasCalled();\n  assertApi('gtmOnFailure').wasNotCalled();\n\
     });"
+- name: '[Event] gtmOnFailure handler is called if some request fails with status
+    code'
+  code: |-
+    setAllMockData({
+      tagIdsList: [
+        { value: 'tagId0' },
+        { value: 'tagId1' }
+      ],
+      tagRegion: 'NA',
+      eventType: 'standard',
+      eventNameStandard: 'Off-AmazonPurchases',
+    });
+
+    let sendHttpGetExecutions = 0;
+    mock('sendHttpGet', (requestUrl) => {
+      sendHttpGetExecutions++;
+      const statusCode = (sendHttpGetExecutions === 1) ? 500 : 200;
+
+      return Promise.create((resolve, reject) => {
+        resolve({ statusCode: statusCode });
+      });
+    });
+
+    runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasNotCalled();
+      assertApi('gtmOnFailure').wasCalled();
+    });
+- name: '[Event] gtmOnFailure handler is called if some request rejects'
+  code: "setAllMockData({\n  tagIdsList: [\n    { value: 'tagId0' },\n    { value:\
+    \ 'tagId1' }\n  ],\n  tagRegion: 'NA',\n  eventType: 'standard',\n  eventNameStandard:\
+    \ 'Off-AmazonPurchases',\n});\n\nlet sendHttpGetExecutions = 0;\nmock('sendHttpGet',\
+    \ (requestUrl) => {\n  sendHttpGetExecutions++;\n  \n  return Promise.create((resolve,\
+    \ reject) => {\n    if (sendHttpGetExecutions === 1) reject({ reason: 'failed'\
+    \ });\n    else resolve({ statusCode: 200 });\n  });\n});\n\nrunCode(mockData);\n\
+    \ncallLater(() => {\n  assertApi('gtmOnSuccess').wasNotCalled();\n  assertApi('gtmOnFailure').wasCalled();\n\
+    });"
+- name: '[Event] gtmOnFailure handler is called if Promise dot all rejects'
+  code: |-
+    setAllMockData({
+      tagIdsList: [
+        { value: 'tagId0' },
+        { value: 'tagId1' }
+      ],
+      tagRegion: 'NA',
+      eventType: 'standard',
+      eventNameStandard: 'Off-AmazonPurchases',
+    });
+
+    const expectedRequestParameters = {
+      event: 'Off-AmazonPurchases',
+      eventSource: 'gtm-server-side',
+      ts: '1747945830456',
+      gdpr: '1',
+      gdpr_pd: '1',
+      gdpr_consent: 'TCFv2 consent string',
+      brand: 'brand',
+      category: 'category',
+      foo: 'bar',
+      MATCH_ID: 'userId',
+      currencyCode: 'currencyCode'
+    };
+
+    mock('sendHttpGet', (requestUrl) => {
+      return Promise.create((resolve, reject) => {
+        resolve({ statusCode: 200 });
+      });
+    });
+
+    mockObject('Promise', {
+      all: () => Promise.create((resolve, reject) => reject({ reason: 'failed' }))
+    });
+
+    runCode(mockData);
+
+    callLater(() => {
+      assertApi('gtmOnSuccess').wasNotCalled();
+      assertApi('gtmOnFailure').wasCalled();
+    });
 - name: '[Event] sendPixelFromBrowser is called when the Event request produces a
     30X redirect'
   code: |-
@@ -2715,79 +2858,61 @@ scenarios:
       assertApi('gtmOnSuccess').wasCalled();
       assertApi('gtmOnFailure').wasNotCalled();
     });
-- name: Should log to console, if the 'Always log to console' option is selected
-  code: "setAllMockData({\n  logType: 'always'\n});\n\nconst expectedDebugMode = true;\n\
-    mock('getContainerVersion', () => {\n  return {\n    debugMode: expectedDebugMode\n\
-    \  };\n}); \n\nmock('logToConsole', (logData) => {\n  const parsedLogData = JSON.parse(logData);\n\
-    \  requiredConsoleKeys.forEach(p => assertThat(parsedLogData[p]).isDefined());\n\
-    });\n\nrunCode(mockData);\n\ncallLater(() => {\n  assertApi('logToConsole').wasCalled();\n\
-    \  assertApi('gtmOnSuccess').wasCalled();\n  assertApi('gtmOnFailure').wasNotCalled();\n\
-    });"
-- name: Should log to console, if the 'Log during debug and preview' option is selected
-    AND is on preview mode
+- name: '[Event] sendPixelFromBrowser is NOT called when the Event request produces
+    a 30X redirect and cookie syncing is disabled'
   code: |-
     setAllMockData({
-      logType: 'debug'
+      tagIdsList: [
+        { value: 'tagId0' }
+      ],
+      tagRegion: 'NA',
+      eventType: 'standard',
+      eventNameStandard: 'Off-AmazonPurchases',
+      enableThirdPartyCookieSyncing: false
     });
 
-    const expectedDebugMode = true;
-    mock('getContainerVersion', () => {
-      return {
-        debugMode: expectedDebugMode
-      };
-    });
-
-    mock('logToConsole', (logData) => {
-      const parsedLogData = JSON.parse(logData);
-      requiredConsoleKeys.forEach(p => assertThat(parsedLogData[p]).isDefined());
-    });
-
-
-    runCode(mockData);
-
-    callLater(() => {
-      assertApi('logToConsole').wasCalled();
-      assertApi('gtmOnSuccess').wasCalled();
-      assertApi('gtmOnFailure').wasNotCalled();
-    });
-- name: Should NOT log to console, if the 'Log during debug and preview' option is
-    selected AND is NOT on preview mode
-  code: "setAllMockData({\n  logType: 'debug'\n});\n\nconst expectedDebugMode = false;\n\
-    mock('getContainerVersion', () => {\n  return {\n    debugMode: expectedDebugMode\n\
-    \  };\n}); \n\nrunCode(mockData);\n\ncallLater(() => {\n  assertApi('logToConsole').wasNotCalled();\n\
-    \  assertApi('gtmOnSuccess').wasCalled();\n  assertApi('gtmOnFailure').wasNotCalled();\n\
-    });"
-- name: Should NOT log to console, if the 'Do not log' option is selected
-  code: |-
-    setAllMockData({
-      logType: 'no'
+    const sendPixelFromBrowserUrl = 'https://s.amazon-adsystem.com/iu3?pid=tagId0&event=Off-AmazonPurchases&eventSource=gtm-server-side&ts=1747945830456&gdpr=1&gdpr_pd=1&gdpr_consent=TCFv2%20consent%20string&brand=brand&category=category&foo=bar&MATCH_ID=userId';
+    mock('sendHttpGet', (requestUrl) => {
+      return Promise.create((resolve, reject) => {
+        resolve({ statusCode: 302, headers: { location: sendPixelFromBrowserUrl } });
+      });
     });
 
     runCode(mockData);
 
     callLater(() => {
-      assertApi('logToConsole').wasNotCalled();
+      assertApi('sendPixelFromBrowser').wasNotCalled();
       assertApi('gtmOnSuccess').wasCalled();
       assertApi('gtmOnFailure').wasNotCalled();
     });
-- name: Should log to BQ, if the 'Log to BigQuery' option is selected
-  code: "setAllMockData({\n  bigQueryLogType: 'always'\n});\n\n// assertApi doesn't\
-    \ work for 'BigQuery.insert()'.\n// Ref: https://gtm-gear.com/posts/gtm-templates-testing/\n\
-    mock('BigQuery', () => {\n  return { \n    insert: (connectionInfo, rows, options)\
-    \ => { \n      assertThat(connectionInfo).isDefined();\n      assertThat(rows).isArray();\n\
-    \      assertThat(rows).hasLength(1);\n      requiredBqKeys.forEach(p => assertThat(rows[0][p]).isDefined());\n\
-    \      assertThat(options).isEqualTo(expectedBqOptions);\n      return Promise.create((resolve,\
-    \ reject) => {\n        resolve();\n      });\n    }\n  };\n});\n\nrunCode(mockData);\n\
-    \ncallLater(() => {\n  assertApi('gtmOnSuccess').wasCalled();\n  assertApi('gtmOnFailure').wasNotCalled();\n\
-    });"
-- name: Should NOT log to BQ, if the 'Do not log to BigQuery' option is selected
-  code: "setAllMockData({\n  bigQueryLogType: 'no'\n});\n\n// assertApi doesn't work\
-    \ for 'BigQuery.insert()'.\n// Ref: https://gtm-gear.com/posts/gtm-templates-testing/\n\
-    mock('BigQuery', () => {\n  return { \n    insert: (connectionInfo, rows, options)\
-    \ => { \n      fail('BigQuery.insert should not have been called.');\n      return\
-    \ Promise.create((resolve, reject) => {\n        resolve();\n      });\n    }\n\
-    \  };\n});\n\nrunCode(mockData);\n\ncallLater(() => {\n  assertApi('gtmOnSuccess').wasCalled();\n\
-    \  assertApi('gtmOnFailure').wasNotCalled();\n});"
+- name: '[Event] sendPixelFromBrowser is NOT called when the Event request produces
+    a 30X redirect and optmistic scenario is enabled'
+  code: |-
+    setAllMockData({
+      tagIdsList: [
+        { value: 'tagId0' }
+      ],
+      tagRegion: 'NA',
+      eventType: 'standard',
+      eventNameStandard: 'Off-AmazonPurchases',
+      enableThirdPartyCookieSyncing: true,
+      useOptimisticScenario: true
+    });
+
+    const sendPixelFromBrowserUrl = 'https://s.amazon-adsystem.com/iu3?pid=tagId0&event=Off-AmazonPurchases&eventSource=gtm-server-side&ts=1747945830456&gdpr=1&gdpr_pd=1&gdpr_consent=TCFv2%20consent%20string&brand=brand&category=category&foo=bar&MATCH_ID=userId';
+    mock('sendHttpGet', (requestUrl) => {
+      return Promise.create((resolve, reject) => {
+        resolve({ statusCode: 302, headers: { location: sendPixelFromBrowserUrl } });
+      });
+    });
+
+    runCode(mockData);
+
+    callLater(() => {
+      assertApi('sendPixelFromBrowser').wasNotCalled();
+      assertApi('gtmOnSuccess').wasCalled();
+      assertApi('gtmOnFailure').wasNotCalled();
+    });
 setup: "const JSON = require('JSON');\nconst Promise = require('Promise');\nconst\
   \ parseUrl = require('parseUrl');\nconst makeInteger = require('makeInteger');\n\
   const callLater = require('callLater');\n\nconst mergeObj = (target, source) =>\
@@ -2841,29 +2966,29 @@ setup: "const JSON = require('JSON');\nconst Promise = require('Promise');\ncons
   \ 'type', 'trace_id', 'tag_name'];\nconst expectedBqOptions = { ignoreUnknownValues:\
   \ true };\n\nconst mockData = {\n  eventType: 'standard',\n  eventNameStandard:\
   \ 'Off-AmazonPurchases',\n  tagIdsList: [\n    { value: 'tagId0' }\n  ],\n  tagRegion:\
-  \ 'NA',\n  notSetMeasurementTokenCookie: false,\n  overrideCookieSettings: false,\n\
-  \  useOptimisticScenario: false,\n  logBigQueryProjectId: expectedBigQuerySettings.logBigQueryProjectId,\n\
-  \  logBigQueryDatasetId: expectedBigQuerySettings.logBigQueryDatasetId,\n  logBigQueryTableId:\
-  \ expectedBigQuerySettings.logBigQueryTableId\n};\n\nconst setAllMockData = (objToBeMerged)\
-  \ => {  \n  mergeObj(mockData, \n    mergeObj({\n      enableAdvancedMatching: true,\n\
-  \      matchId: 'userId',\n      userDataAttributesList: [\n        { name: 'email',\
-  \ value: 'test@example.com' },\n        { name: 'phonenumber', value: '+55 19 9-9999-9999'\
-  \ }\n      ],\n      aipTokenCookieTTL: '9600',\n      countryCode: 'BR',\n    \
-  \  ipAddress: '2804:14d:c096:8dd6:311c:8c00:e6c:e33',\n      amznUserData: 'GRANTED',\n\
-  \      amznAdStorage: 'GRANTED',\n      gpp: 'Global Privacy Platform string',\n\
-  \    \n      includeTCFv2: true,\n      gdpr: 1,\n      gdprPd: 1,\n      gdprTCFConsentString:\
-  \ 'TCFv2 consent string',\n        \n      defaultAttributesList: [\n        { name:\
-  \ 'brand', value: 'brand' },\n        { name: 'category', value: 'category' }\n\
-  \      ],\n      offAmazonPurchasesAttributesList: [\n        { name: 'currencyCode',\
-  \ value: 'currencyCode' }\n      ],\n      eventCustomAttributesList: [{ name: 'foo',\
-  \ value: 'bar' }],\n      \n      adStorageConsent: 'optional',\n      logType:\
-  \ 'debug',\n      bigQueryLogType: 'no'\n    }, objToBeMerged || {})\n  );\n};\n\
-  \n\nmock('getRequestHeader', (header) => {\n  if (header === 'trace-id') return\
-  \ 'expectedTraceId';\n});\n\nmock('getTimestampMillis', 1747945830456);\n\nmock('sendHttpRequest',\
-  \ (requestUrl, requestOptions, requestBody) => {\n  return Promise.create((resolve,\
-  \ reject) => {\n    resolve({ statusCode: 200 });\n  });\n});\n\nmock('sendHttpGet',\
-  \ (requestUrl) => {\n  return Promise.create((resolve, reject) => {\n    resolve({\
-  \ statusCode: 200 });\n  });\n});"
+  \ 'NA',\n  notSetMeasurementTokenCookie: false,\n  enableThirdPartyCookieSyncing:\
+  \ true,\n  overrideCookieSettings: false,\n  useOptimisticScenario: false,\n  logBigQueryProjectId:\
+  \ expectedBigQuerySettings.logBigQueryProjectId,\n  logBigQueryDatasetId: expectedBigQuerySettings.logBigQueryDatasetId,\n\
+  \  logBigQueryTableId: expectedBigQuerySettings.logBigQueryTableId\n};\n\nconst\
+  \ setAllMockData = (objToBeMerged) => {  \n  mergeObj(mockData, \n    mergeObj({\n\
+  \      enableAdvancedMatching: true,\n      matchId: 'userId',\n      userDataAttributesList:\
+  \ [\n        { name: 'email', value: 'test@example.com' },\n        { name: 'phonenumber',\
+  \ value: '+55 19 9-9999-9999' }\n      ],\n      aipTokenCookieTTL: '9600',\n  \
+  \    countryCode: 'BR',\n      ipAddress: '2804:14d:c096:8dd6:311c:8c00:e6c:e33',\n\
+  \      amznUserData: 'GRANTED',\n      amznAdStorage: 'GRANTED',\n      gpp: 'Global\
+  \ Privacy Platform string',\n    \n      includeTCFv2: true,\n      gdpr: 1,\n \
+  \     gdprPd: 1,\n      gdprTCFConsentString: 'TCFv2 consent string',\n        \n\
+  \      defaultAttributesList: [\n        { name: 'brand', value: 'brand' },\n  \
+  \      { name: 'category', value: 'category' }\n      ],\n      offAmazonPurchasesAttributesList:\
+  \ [\n        { name: 'currencyCode', value: 'currencyCode' }\n      ],\n      eventCustomAttributesList:\
+  \ [{ name: 'foo', value: 'bar' }],\n      \n      adStorageConsent: 'optional',\n\
+  \      logType: 'debug',\n      bigQueryLogType: 'no'\n    }, objToBeMerged || {})\n\
+  \  );\n};\n\n\nmock('getRequestHeader', (header) => {\n  if (header === 'trace-id')\
+  \ return 'expectedTraceId';\n});\n\nmock('getTimestampMillis', 1747945830456);\n\
+  \nmock('sendHttpRequest', (requestUrl, requestOptions, requestBody) => {\n  return\
+  \ Promise.create((resolve, reject) => {\n    resolve({ statusCode: 200 });\n  });\n\
+  });\n\nmock('sendHttpGet', (requestUrl) => {\n  return Promise.create((resolve,\
+  \ reject) => {\n    resolve({ statusCode: 200 });\n  });\n});"
 
 
 ___NOTES___

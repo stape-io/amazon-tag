@@ -21,9 +21,10 @@ The **Amazon Ads Tag for GTM Server-Side** enables you to send conversion events
 6. Enable **Advanced Matching** to securely send user identifiers and enrich attribution.
 7. Use a **Match ID** to link interactions across sessions and platforms without exposing personal data.
 8. Set up **Consent Configuration** using TCFv2.
-9. Configure cookie behaviors (optional) for storing Measurement Tokens (`amznAref`).
-10. Activate **Optimistic Scenario** if you want the tag to return success without waiting for the Amazon API response.
-11. Enable **Logging** to Console and/or BigQuery for debugging and monitoring.
+9. Configure cookie behaviors (optional) for storing **Measurement Tokens** (`amznAref`).
+10. Configure **3rd-party cookie syncing from the browser** for improved user matching.
+11. Activate **Optimistic Scenario** if you want the tag to return success without waiting for the Amazon API response.
+12. Enable **Logging** to Console and/or BigQuery for debugging and monitoring.
 
 ## Supported Event Name Setup Methods
 
@@ -97,6 +98,11 @@ Ideal for:
 - Allows or suppresses cookie setting based on configuration.
 - Tokens are managed with expiration policies and region-specific behavior.
 - Only active in **NA** region (never sent or stored in **EU** region).
+
+### 3rd-party cookie syncing from the browser
+
+- Enable 3rd-party cookie syncing from the browser for improved user matching.
+- This feature is unavailable if the **Use Optimistic Scenario** configuration is enabled.
 
 ## Useful links:
 
