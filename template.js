@@ -1,8 +1,10 @@
 const BigQuery = require('BigQuery');
+const computeEffectiveTldPlusOne = require('computeEffectiveTldPlusOne');
 const encodeUriComponent = require('encodeUriComponent');
 const getAllEventData = require('getAllEventData');
 const getContainerVersion = require('getContainerVersion');
 const getCookieValues = require('getCookieValues');
+const getEventData = require('getEventData');
 const getRequestHeader = require('getRequestHeader');
 const getTimestampMillis = require('getTimestampMillis');
 const getType = require('getType');
@@ -22,18 +24,10 @@ const sha256Sync = require('sha256Sync');
 /*==============================================================================
 ==============================================================================*/
 
-const traceId = getRequestHeader('trace-id');
-
 const eventData = getAllEventData();
-
 const useOptimisticScenario = isUIFieldTrue(data.useOptimisticScenario);
 
-if (!isConsentGivenOrNotRequired()) {
-  return data.gtmOnSuccess();
-}
-
-const url = eventData.page_location || getRequestHeader('referer');
-if (url && url.lastIndexOf('https://gtm-msr.appspot.com/', 0) === 0) {
+if (shouldExitEarly(data, eventData)) {
   return data.gtmOnSuccess();
 }
 
@@ -57,7 +51,7 @@ function mapEvent(data, eventData) {
   };
 
   mappedData = addGDPRData(data, mappedData);
-  mappedData = addMeasurementToken(data, mappedData);
+  mappedData = addMeasurementToken(data, eventData, mappedData);
   mappedData = addEventDetailsData(data, eventData, mappedData);
 
   return mappedData;
@@ -151,8 +145,8 @@ function removeAnyExpiredMeasurementTokens(data, tokens, measurementTokenTTL) {
   return unexpiredMeasurementTokens;
 }
 
-function handleMeasurementTokenFromURL(data, tokens, measurementTokenTTL) {
-  const parsedUrl = parseUrl(url);
+function handleMeasurementTokenFromURL(data, eventData, tokens, measurementTokenTTL) {
+  const parsedUrl = parseUrl(getUrl(eventData));
   if (!parsedUrl || !parsedUrl.searchParams || !parsedUrl.searchParams.aref) return;
 
   const measurementTokenFromUrl = parsedUrl.searchParams.aref;
@@ -178,7 +172,7 @@ function handleMeasurementTokenFromURL(data, tokens, measurementTokenTTL) {
   return updatedTokens;
 }
 
-function addMeasurementToken(data, mappedData) {
+function addMeasurementToken(data, eventData, mappedData) {
   const measurementTokenTTL = 2592000000; // 30 days in milliseconds
 
   const existingTokens = getMeasurementTokenArray();
@@ -190,7 +184,12 @@ function addMeasurementToken(data, mappedData) {
   );
 
   if (data.tagRegion === 'NA') {
-    const updatedTokens = handleMeasurementTokenFromURL(data, unexpiredTokens, measurementTokenTTL);
+    const updatedTokens = handleMeasurementTokenFromURL(
+      data,
+      eventData,
+      unexpiredTokens,
+      measurementTokenTTL
+    );
 
     if (updatedTokens)
       mappedData.arefs = measurementTokenTimestampPairsArrayToCookie(updatedTokens);
@@ -336,7 +335,6 @@ function buildAIPTokenConfig(data, eventData) {
     log({
       Name: 'Amazon',
       Type: 'Message',
-      TraceId: traceId,
       EventName: 'AIP Token Request',
       Message: 'Request was not sent.',
       Reason: 'If GDPR consent is enabled, the TCFv2 consent string must be set.'
@@ -371,7 +369,6 @@ function fetchAIPToken(data, eventData) {
   log({
     Name: 'Amazon',
     Type: 'Request',
-    TraceId: traceId,
     EventName: 'AIP Token Request',
     RequestMethod: 'POST',
     RequestUrl: requestUrl,
@@ -390,7 +387,6 @@ function fetchAIPToken(data, eventData) {
       log({
         Name: 'Amazon',
         Type: 'Response',
-        TraceId: traceId,
         EventName: 'AIP Token Request',
         ResponseStatusCode: result.statusCode,
         ResponseHeaders: result.headers,
@@ -417,7 +413,6 @@ function fetchAIPToken(data, eventData) {
       log({
         Name: 'Amazon',
         Type: 'Message',
-        TraceId: traceId,
         EventName: 'AIP Token Request',
         Message: 'Request failed or timed out.',
         Reason: JSON.stringify(result)
@@ -444,7 +439,6 @@ function validateParameterName(parameter, mappedData) {
   log({
     Name: 'Amazon',
     Type: 'Message',
-    TraceId: traceId,
     EventName: mappedData.event,
     Message: 'Request was not sent.',
     Reason: 'Parameter "' + parameter + '" is invalid: length greater than ' + maxLength
@@ -462,7 +456,6 @@ function validateParameterValue(parameterValue, mappedData) {
   log({
     Name: 'Amazon',
     Type: 'Message',
-    TraceId: traceId,
     EventName: mappedData.event,
     Message: 'Request was not sent.',
     Reason: 'Parameter value "' + parameterValue + '" is invalid: length greater than ' + maxLength
@@ -522,24 +515,65 @@ function getRequestUrlParameters(mappedData) {
   return requestParametersList.join('&');
 }
 
-function trackEvent(mappedData, requestUrl) {
+function trackEvent(mappedData, requestUrl, tagId) {
   log({
     Name: 'Amazon',
     Type: 'Request',
-    TraceId: traceId,
     EventName: mappedData.event,
     RequestMethod: 'GET',
-    RequestUrl: requestUrl
+    RequestUrl: requestUrl,
+    Message: 'Tag ID: ' + tagId
   });
 
-  return sendHttpGet(requestUrl).then((result) => {
-    if (result.statusCode >= 300 && result.statusCode < 400) {
-      // 3rd party cookie 'ad-id' sync
-      sendPixelFromBrowser(result.headers.location);
-    }
+  return sendHttpGet(requestUrl)
+    .then((result) => {
+      log({
+        Name: 'Amazon',
+        Type: 'Response',
+        EventName: mappedData.event,
+        ResponseStatusCode: result.statusCode,
+        ResponseHeaders: result.headers,
+        ResponseBody: result.body,
+        Message: 'Tag ID: ' + tagId
+      });
 
-    return result;
-  });
+      if (result.statusCode < 200 || result.statusCode >= 400) return false;
+
+      if (
+        result.statusCode >= 300 &&
+        result.statusCode < 400 &&
+        result.headers.location &&
+        isUIFieldTrue(data.enableThirdPartyCookieSyncing) &&
+        !isUIFieldTrue(data.useOptimisticScenario)
+      ) {
+        // 3rd party cookie 'ad-id' sync
+        // e.g. https://s.amazon-adsystem.com/iu3?pid=<pid>&event=PageView&eventSource=gtm-server-side&ts=1770997052030&[...]&dcc=t
+        const sendPixelFromBrowserSuccess = sendPixelFromBrowser(result.headers.location);
+        if (!sendPixelFromBrowserSuccess) {
+          log({
+            Name: 'Amazon',
+            Type: 'Message',
+            EventName: mappedData.event,
+            Message:
+              'The requestor does not support sending pixels from browser. 3rd party cookies will not be collected as a result. Tag ID: ' +
+              tagId
+          });
+        }
+      }
+
+      return true;
+    })
+    .catch((result) => {
+      log({
+        Name: 'Amazon',
+        Type: 'Response',
+        EventName: mappedData.event,
+        Message: 'Request failed or timed out. Tag ID: ' + tagId,
+        Reason: JSON.stringify(result)
+      });
+
+      return false;
+    });
 }
 
 function sendEventRequests(data, eventData, aipToken) {
@@ -551,7 +585,6 @@ function sendEventRequests(data, eventData, aipToken) {
     log({
       Name: 'Amazon',
       Type: 'Message',
-      TraceId: traceId,
       EventName: mappedData.event,
       Message: 'Request was not sent.',
       Reason: 'One or more required properties are missing: ' + missingParameters.join(' or ')
@@ -571,45 +604,27 @@ function sendEventRequests(data, eventData, aipToken) {
     const tagIdValue = tagId.value;
     if (!tagIdValue) return;
     const requestUrl = requestBaseUrl + '?pid=' + tagIdValue + '&' + requestUrlParameters;
-    eventRequests.push(trackEvent(mappedData, requestUrl));
+    eventRequests.push(trackEvent(mappedData, requestUrl, tagIdValue));
   });
 
   Promise.all(eventRequests)
     .then((results) => {
-      let someRequestFailed = false;
-
-      results.forEach((result) => {
-        log({
-          Name: 'Amazon',
-          Type: 'Response',
-          TraceId: traceId,
-          EventName: mappedData.event,
-          ResponseStatusCode: result.statusCode,
-          ResponseHeaders: result.headers,
-          ResponseBody: result.body
-        });
-
-        if (result.statusCode < 200 || result.statusCode >= 400) {
-          someRequestFailed = true;
-        }
-      });
-
       if (!useOptimisticScenario) {
-        if (someRequestFailed) data.gtmOnFailure();
-        else data.gtmOnSuccess();
+        const someRequestFailed = results.some((success) => !success);
+        if (someRequestFailed) return data.gtmOnFailure();
+        return data.gtmOnSuccess();
       }
     })
     .catch((result) => {
       log({
         Name: 'Amazon',
         Type: 'Message',
-        TraceId: traceId,
         EventName: mappedData.event,
-        Message: 'Some request may have failed or timed out.',
+        Message: 'Something went wrong.',
         Reason: JSON.stringify(result)
       });
 
-      if (!useOptimisticScenario) data.gtmOnFailure();
+      if (!useOptimisticScenario) return data.gtmOnFailure();
     });
 }
 
@@ -623,6 +638,19 @@ function areThereRequiredParametersMissing(requestData) {
 /*==============================================================================
   Helpers
 ==============================================================================*/
+
+function shouldExitEarly(data, eventData) {
+  if (!isConsentGivenOrNotRequired(data, eventData)) return true;
+
+  const url = getUrl(eventData);
+  if (url && url.lastIndexOf('https://gtm-msr.appspot.com/', 0) === 0) return true;
+
+  return false;
+}
+
+function getUrl(eventData) {
+  return eventData.page_location || eventData.page_referrer || getRequestHeader('referer');
+}
 
 function replaceNonAlphanumeric(input) {
   if (getType(input) !== 'string') return input;
@@ -705,18 +733,18 @@ function isUIFieldTrue(field) {
 
 function isValidValue(value) {
   const valueType = getType(value);
-  return valueType !== 'null' && valueType !== 'undefined' && value !== '';
+  return valueType !== 'null' && valueType !== 'undefined' && value !== '' && value === value;
 }
 
 function enc(data) {
-  if (data === undefined || data === null) data = '';
+  if (['null', 'undefined'].indexOf(getType(data)) !== -1) data = '';
   return encodeUriComponent(makeString(data));
 }
 
 function setCookieValue(name, value, maxAge) {
   const overrideCookieSettings = isUIFieldTrue(data.overrideCookieSettings);
   setCookie(name, value, {
-    domain: overrideCookieSettings ? data.cookieDomain : 'auto',
+    domain: getCookieDomain(data),
     sameSite: 'strict',
     path: '/',
     secure: true,
@@ -725,7 +753,15 @@ function setCookieValue(name, value, maxAge) {
   });
 }
 
-function isConsentGivenOrNotRequired() {
+function getCookieDomain(data) {
+  const overrideCookieSettings = isUIFieldTrue(data.overrideCookieSettings);
+  return !overrideCookieSettings || !data.cookieDomain || data.cookieDomain === 'auto'
+    ? computeEffectiveTldPlusOne(getEventData('page_location') || getRequestHeader('referer')) ||
+        'auto'
+    : data.cookieDomain;
+}
+
+function isConsentGivenOrNotRequired(data, eventData) {
   if (data.adStorageConsent !== 'required') return true;
   if (eventData.consent_state) return !!eventData.consent_state.ad_storage;
   const xGaGcs = eventData['x-ga-gcs'] || ''; // x-ga-gcs is a string like "G110"
@@ -736,6 +772,8 @@ function log(rawDataToLog) {
   const logDestinationsHandlers = {};
   if (determinateIsLoggingEnabled()) logDestinationsHandlers.console = logConsole;
   if (determinateIsLoggingEnabledForBigQuery()) logDestinationsHandlers.bigQuery = logToBigQuery;
+
+  rawDataToLog.TraceId = getRequestHeader('trace-id');
 
   const keyMappings = {
     // No transformation for Console is needed.
@@ -788,9 +826,7 @@ function logToBigQuery(dataToLog) {
     dataToLog[p] = JSON.stringify(dataToLog[p]);
   });
 
-  const bigquery =
-    getType(BigQuery) === 'function' ? BigQuery() /* Only during Unit Tests */ : BigQuery;
-  bigquery.insert(connectionInfo, [dataToLog], { ignoreUnknownValues: true });
+  BigQuery.insert(connectionInfo, [dataToLog], { ignoreUnknownValues: true });
 }
 
 function determinateIsLoggingEnabled() {
