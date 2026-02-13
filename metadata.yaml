@@ -1,6 +1,8 @@
 homepage: 'https://stape.io/'
 documentation: 'https://github.com/stape-io/amazon-tag'
 versions:
+  - sha: 8b237e41133a4f9cc105dd046800828e830380a8
+    changeNotes: Transformed 3rd-party cookie syncing from the browser into an optional feature.
   - sha: 89c38479f1def26823a386dff55212ba79394be2
     changeNotes: Updated consent section.
   - sha: 5638973e8479aa94586f098345f6da7807274ac4
