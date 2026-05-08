@@ -203,6 +203,9 @@ function addMeasurementToken(data, eventData, mappedData) {
 function addEventDetailsData(data, eventData, mappedData) {
   const eventParameters = {};
 
+  const eventId = eventData.event_id || eventData.transaction_id;
+  if (eventId) eventParameters.clientDedupeId = eventId;
+
   if (eventData.currency) eventParameters.currencyCode = eventData.currency;
 
   if (isValidValue(eventData.value)) eventParameters.value = eventData.value;
