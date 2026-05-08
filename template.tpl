@@ -37,273 +37,279 @@ ___TEMPLATE_PARAMETERS___
 
 [
   {
-    "type": "RADIO",
-    "name": "eventType",
-    "displayName": "Event Name Setup Method",
-    "radioItems": [
+    "type": "GROUP",
+    "name": "configGroup",
+    "subParams": [
       {
-        "value": "standard",
-        "displayValue": "Standard",
-        "subParams": [
+        "type": "RADIO",
+        "name": "eventType",
+        "displayName": "Event Name Setup Method",
+        "radioItems": [
           {
-            "type": "SELECT",
-            "name": "eventNameStandard",
-            "selectItems": [
+            "value": "standard",
+            "displayValue": "Standard",
+            "subParams": [
               {
-                "displayValue": "AddToShoppingCart",
-                "value": "AddToShoppingCart"
-              },
-              {
-                "displayValue": "Contact",
-                "value": "Contact"
-              },
-              {
-                "displayValue": "Checkout",
-                "value": "Checkout"
-              },
-              {
-                "displayValue": "PageView",
-                "value": "PageView"
-              },
-              {
-                "displayValue": "Search",
-                "value": "Search"
-              },
-              {
-                "displayValue": "Signup",
-                "value": "Signup"
-              },
-              {
-                "displayValue": "Application",
-                "value": "Application"
-              },
-              {
-                "displayValue": "Subscribe",
-                "value": "Subscribe"
-              },
-              {
-                "value": "Other",
-                "displayValue": "Other"
-              },
-              {
-                "value": "Lead",
-                "displayValue": "Lead"
-              },
-              {
-                "value": "Off-AmazonPurchases",
-                "displayValue": "Off-AmazonPurchases"
+                "type": "SELECT",
+                "name": "eventNameStandard",
+                "selectItems": [
+                  {
+                    "displayValue": "AddToShoppingCart",
+                    "value": "AddToShoppingCart"
+                  },
+                  {
+                    "displayValue": "Contact",
+                    "value": "Contact"
+                  },
+                  {
+                    "displayValue": "Checkout",
+                    "value": "Checkout"
+                  },
+                  {
+                    "displayValue": "PageView",
+                    "value": "PageView"
+                  },
+                  {
+                    "displayValue": "Search",
+                    "value": "Search"
+                  },
+                  {
+                    "displayValue": "Signup",
+                    "value": "Signup"
+                  },
+                  {
+                    "displayValue": "Application",
+                    "value": "Application"
+                  },
+                  {
+                    "displayValue": "Subscribe",
+                    "value": "Subscribe"
+                  },
+                  {
+                    "value": "Other",
+                    "displayValue": "Other"
+                  },
+                  {
+                    "value": "Lead",
+                    "displayValue": "Lead"
+                  },
+                  {
+                    "value": "Off-AmazonPurchases",
+                    "displayValue": "Off-AmazonPurchases"
+                  }
+                ],
+                "simpleValueType": true,
+                "defaultValue": "PageView",
+                "displayName": "Event Name",
+                "valueValidators": [
+                  {
+                    "type": "NON_EMPTY"
+                  }
+                ],
+                "alwaysInSummary": true
               }
             ],
-            "simpleValueType": true,
-            "defaultValue": "PageView",
-            "displayName": "Event Name",
-            "valueValidators": [
+            "help": ""
+          },
+          {
+            "value": "inherit",
+            "subParams": [],
+            "displayValue": "Inherit from client",
+            "help": "This option uses the event name from the incoming request.\n\u003cbr/\u003e\u003cbr/\u003e\nIf the incoming request uses the \u003cb\u003eGoogle Analytics 4 (GA4)\u003c/b\u003e event naming schema, the following mappings will be applied to convert GA4 event names into Amazon equivalents: \n\u003cbr/\u003e \n\u003cul\u003e \n\u003cli\u003epage_view → PageView\u003c/li\u003e \u003cli\u003egtm.dom → PageView\u003c/li\u003e \u003cli\u003esign_up → Signup\u003c/li\u003e \u003cli\u003egenerate_lead → Lead\u003c/li\u003e \u003cli\u003esearch → Search\u003c/li\u003e \u003cli\u003eview_search_results → Search\u003c/li\u003e \u003cli\u003eadd_to_cart → AddToShoppingCart\u003c/li\u003e \u003cli\u003ebegin_checkout → Checkout\u003c/li\u003e \u003cli\u003epurchase → AmazonPurchases\u003c/li\u003e\n\u003c/ul\u003e"
+          },
+          {
+            "value": "custom",
+            "subParams": [
               {
-                "type": "NON_EMPTY"
+                "type": "TEXT",
+                "name": "eventNameCustom",
+                "displayName": "Event Name",
+                "simpleValueType": true,
+                "valueValidators": [
+                  {
+                    "type": "NON_EMPTY"
+                  }
+                ]
               }
             ],
-            "alwaysInSummary": true
+            "displayValue": "Custom",
+            "help": ""
           }
         ],
-        "help": ""
+        "simpleValueType": true,
+        "defaultValue": "standard"
       },
       {
-        "value": "inherit",
-        "subParams": [],
-        "displayValue": "Inherit from client",
-        "help": "This option uses the event name from the incoming request.\n\u003cbr/\u003e\u003cbr/\u003e\nIf the incoming request uses the \u003cb\u003eGoogle Analytics 4 (GA4)\u003c/b\u003e event naming schema, the following mappings will be applied to convert GA4 event names into Amazon equivalents: \n\u003cbr/\u003e \n\u003cul\u003e \n\u003cli\u003epage_view → PageView\u003c/li\u003e \u003cli\u003egtm.dom → PageView\u003c/li\u003e \u003cli\u003esign_up → Signup\u003c/li\u003e \u003cli\u003egenerate_lead → Lead\u003c/li\u003e \u003cli\u003esearch → Search\u003c/li\u003e \u003cli\u003eview_search_results → Search\u003c/li\u003e \u003cli\u003eadd_to_cart → AddToShoppingCart\u003c/li\u003e \u003cli\u003ebegin_checkout → Checkout\u003c/li\u003e \u003cli\u003epurchase → AmazonPurchases\u003c/li\u003e\n\u003c/ul\u003e"
-      },
-      {
-        "value": "custom",
-        "subParams": [
+        "type": "SIMPLE_TABLE",
+        "name": "tagIdsList",
+        "simpleTableColumns": [
           {
+            "defaultValue": "",
+            "displayName": "",
+            "name": "value",
             "type": "TEXT",
-            "name": "eventNameCustom",
-            "displayName": "Event Name",
-            "simpleValueType": true,
+            "isUnique": true,
             "valueValidators": [
               {
                 "type": "NON_EMPTY"
               }
-            ]
+            ],
+            "valueHint": "2a2b1197-3668-554f-be9ca-9baaaa88a7c9"
           }
         ],
-        "displayValue": "Custom",
-        "help": ""
-      }
-    ],
-    "simpleValueType": true,
-    "defaultValue": "standard"
-  },
-  {
-    "type": "SIMPLE_TABLE",
-    "name": "tagIdsList",
-    "simpleTableColumns": [
-      {
-        "defaultValue": "",
-        "displayName": "",
-        "name": "value",
-        "type": "TEXT",
-        "isUnique": true,
         "valueValidators": [
           {
             "type": "NON_EMPTY"
           }
         ],
-        "valueHint": "2a2b1197-3668-554f-be9ca-9baaaa88a7c9"
-      }
-    ],
-    "valueValidators": [
-      {
-        "type": "NON_EMPTY"
-      }
-    ],
-    "newRowButtonText": "Add Tag ID",
-    "help": "You can find your ID by clicking on \u003ci\u003eView Tag Code\u003c/i\u003e in the Events Manager section in Amazon DSP. \u003ca href\u003d\"https://advertising.amazon.com/help/GLZ54GXQW773A6MG\"\u003eLearn more\u003c/a\u003e.",
-    "displayName": "Tag ID(s)"
-  },
-  {
-    "type": "SELECT",
-    "name": "tagRegion",
-    "displayName": "Region",
-    "selectItems": [
-      {
-        "value": "NA",
-        "displayValue": "North America, South America, Japan and Australia"
+        "newRowButtonText": "Add Tag ID",
+        "help": "You can find your ID by clicking on \u003ci\u003eView Tag Code\u003c/i\u003e in the Events Manager section in Amazon DSP. \u003ca href\u003d\"https://advertising.amazon.com/help/GLZ54GXQW773A6MG\"\u003eLearn more\u003c/a\u003e.",
+        "displayName": "Tag ID(s)"
       },
       {
-        "value": "EU",
-        "displayValue": "Europe"
-      }
-    ],
-    "simpleValueType": true,
-    "defaultValue": "NA"
-  },
-  {
-    "type": "SELECT",
-    "name": "overrideCookieSettings",
-    "displayName": "Override cookie settings",
-    "macrosInSelect": true,
-    "selectItems": [
-      {
-        "value": false,
-        "displayValue": "false"
-      },
-      {
-        "value": true,
-        "displayValue": "true"
-      }
-    ],
-    "simpleValueType": true,
-    "defaultValue": false,
-    "subParams": [
-      {
-        "type": "GROUP",
-        "name": "cookieSettingsGroup",
-        "displayName": "Cookie Settings",
-        "groupStyle": "ZIPPY_OPEN",
-        "subParams": [
+        "type": "SELECT",
+        "name": "tagRegion",
+        "displayName": "Region",
+        "selectItems": [
           {
-            "type": "TEXT",
-            "name": "cookieDomain",
-            "displayName": "Cookie Domain",
-            "simpleValueType": true,
-            "defaultValue": "auto",
-            "valueHint": "example.com",
-            "help": "Enable this option to override the cookie domain. \u003cbr\u003e Enter your website\u0027s top-level domain as a fixed value (e.g., example.com). \u003cbr\u003e If left unchecked, the top-level domain will be automatically determined using the following priority: \u003cul\u003e \u003cli\u003eTop-level domain of the \u003ci\u003eForwarded\u003c/i\u003e header (if present).\u003c/li\u003e \u003cli\u003eTop-level domain of the \u003ci\u003eX-Forwarded-Host\u003c/i\u003e header (if present).\u003c/li\u003e \u003cli\u003eTop-level domain of the \u003ci\u003eHost\u003c/i\u003e header.\u003c/li\u003e \u003c/ul\u003e"
+            "value": "NA",
+            "displayValue": "North America, South America, Japan and Australia"
           },
           {
-            "type": "SELECT",
-            "name": "cookieHttpOnly",
-            "displayName": "Cookie HTTP Only Flag",
-            "macrosInSelect": true,
-            "selectItems": [
-              {
-                "value": true,
-                "displayValue": "true"
-              },
-              {
-                "value": false,
-                "displayValue": "false"
-              }
-            ],
-            "simpleValueType": true,
-            "defaultValue": true
+            "value": "EU",
+            "displayValue": "Europe"
           }
         ],
+        "simpleValueType": true,
+        "defaultValue": "NA"
+      },
+      {
+        "type": "SELECT",
+        "name": "overrideCookieSettings",
+        "displayName": "Override cookie settings",
+        "macrosInSelect": true,
+        "selectItems": [
+          {
+            "value": false,
+            "displayValue": "false"
+          },
+          {
+            "value": true,
+            "displayValue": "true"
+          }
+        ],
+        "simpleValueType": true,
+        "defaultValue": false,
+        "subParams": [
+          {
+            "type": "GROUP",
+            "name": "cookieSettingsGroup",
+            "displayName": "Cookie Settings",
+            "groupStyle": "ZIPPY_OPEN",
+            "subParams": [
+              {
+                "type": "TEXT",
+                "name": "cookieDomain",
+                "displayName": "Cookie Domain",
+                "simpleValueType": true,
+                "defaultValue": "auto",
+                "valueHint": "example.com",
+                "help": "Enable this option to override the cookie domain. \u003cbr\u003e Enter your website\u0027s top-level domain as a fixed value (e.g., example.com). \u003cbr\u003e If left unchecked, the top-level domain will be automatically determined using the following priority: \u003cul\u003e \u003cli\u003eTop-level domain of the \u003ci\u003eForwarded\u003c/i\u003e header (if present).\u003c/li\u003e \u003cli\u003eTop-level domain of the \u003ci\u003eX-Forwarded-Host\u003c/i\u003e header (if present).\u003c/li\u003e \u003cli\u003eTop-level domain of the \u003ci\u003eHost\u003c/i\u003e header.\u003c/li\u003e \u003c/ul\u003e"
+              },
+              {
+                "type": "SELECT",
+                "name": "cookieHttpOnly",
+                "displayName": "Cookie HTTP Only Flag",
+                "macrosInSelect": true,
+                "selectItems": [
+                  {
+                    "value": true,
+                    "displayValue": "true"
+                  },
+                  {
+                    "value": false,
+                    "displayValue": "false"
+                  }
+                ],
+                "simpleValueType": true,
+                "defaultValue": true
+              }
+            ],
+            "enablingConditions": [
+              {
+                "paramName": "overrideCookieSettings",
+                "paramValue": false,
+                "type": "NOT_EQUALS"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "type": "SELECT",
+        "name": "notSetMeasurementTokenCookie",
+        "displayName": "Do not set the Measurement Token cookie (amznAref)",
+        "macrosInSelect": true,
+        "selectItems": [
+          {
+            "value": false,
+            "displayValue": "false"
+          },
+          {
+            "value": true,
+            "displayValue": "true"
+          }
+        ],
+        "simpleValueType": true,
+        "help": "Do not set Measurement Token (\u003ci\u003eamznAref\u003c/i\u003e) cookie. \n\u003cbr\u003e\u003cbr\u003e\nIf an existing Measurement Token cookie is found, it will still be sent in the request but not stored as a cookie. (Only applicable to the \u003ci\u003eNorth America, South America, Japan and Australia\u003c/i\u003e region. For \u003ci\u003eEurope\u003c/i\u003e, the Measurement Token is never transmitted.).",
+        "defaultValue": false
+      },
+      {
+        "type": "SELECT",
+        "name": "enableThirdPartyCookieSyncing",
+        "displayName": "Enabled cookie syncing from browser",
+        "macrosInSelect": true,
+        "selectItems": [
+          {
+            "value": true,
+            "displayValue": "true"
+          },
+          {
+            "value": false,
+            "displayValue": "false"
+          }
+        ],
+        "simpleValueType": true,
+        "help": "Enable 3rd-party cookie syncing from the browser for improved user matching.\n\u003cbr/\u003e\u003cbr/\u003e\n⚠️ This feature is unavailable if the \u003ci\u003eUse Optimistic Scenario\u003c/i\u003e configuration is enabled.\n\u003cbr/\u003e\u003cbr/\u003e\nNote: In the Chrome DevTools Network panel, you may see an \u003ci\u003eERR_BLOCKED_BY_ORB\u003c/i\u003e error associated with this request. This is expected due to a response type mismatch; however, the request is still processed successfully.",
+        "defaultValue": true,
         "enablingConditions": [
           {
-            "paramName": "overrideCookieSettings",
-            "paramValue": false,
+            "paramName": "useOptimisticScenario",
+            "paramValue": true,
             "type": "NOT_EQUALS"
           }
         ]
+      },
+      {
+        "type": "SELECT",
+        "name": "useOptimisticScenario",
+        "displayName": "Use Optimistic Scenario",
+        "macrosInSelect": true,
+        "selectItems": [
+          {
+            "value": true,
+            "displayValue": "true"
+          },
+          {
+            "value": false,
+            "displayValue": "false"
+          }
+        ],
+        "simpleValueType": true,
+        "help": "The tag will call gtmOnSuccess() without waiting for a response from the API. This will speed up sGTM response time however your tag will always return the status fired successfully even in case it is not.",
+        "defaultValue": false
       }
     ]
-  },
-  {
-    "type": "SELECT",
-    "name": "notSetMeasurementTokenCookie",
-    "displayName": "Do not set the Measurement Token cookie (amznAref)",
-    "macrosInSelect": true,
-    "selectItems": [
-      {
-        "value": false,
-        "displayValue": "false"
-      },
-      {
-        "value": true,
-        "displayValue": "true"
-      }
-    ],
-    "simpleValueType": true,
-    "help": "Do not set Measurement Token (\u003ci\u003eamznAref\u003c/i\u003e) cookie. \n\u003cbr\u003e\u003cbr\u003e\nIf an existing Measurement Token cookie is found, it will still be sent in the request but not stored as a cookie. (Only applicable to the \u003ci\u003eNorth America, South America, Japan and Australia\u003c/i\u003e region. For \u003ci\u003eEurope\u003c/i\u003e, the Measurement Token is never transmitted.).",
-    "defaultValue": false
-  },
-  {
-    "type": "SELECT",
-    "name": "enableThirdPartyCookieSyncing",
-    "displayName": "Enabled cookie syncing from browser",
-    "macrosInSelect": true,
-    "selectItems": [
-      {
-        "value": true,
-        "displayValue": "true"
-      },
-      {
-        "value": false,
-        "displayValue": "false"
-      }
-    ],
-    "simpleValueType": true,
-    "help": "Enable 3rd-party cookie syncing from the browser for improved user matching.\n\u003cbr/\u003e\u003cbr/\u003e\n⚠️ This feature is unavailable if the \u003ci\u003eUse Optimistic Scenario\u003c/i\u003e configuration is enabled.\n\u003cbr/\u003e\u003cbr/\u003e\nNote: In the Chrome DevTools Network panel, you may see an \u003ci\u003eERR_BLOCKED_BY_ORB\u003c/i\u003e error associated with this request. This is expected due to a response type mismatch; however, the request is still processed successfully.",
-    "defaultValue": true,
-    "enablingConditions": [
-      {
-        "paramName": "useOptimisticScenario",
-        "paramValue": true,
-        "type": "NOT_EQUALS"
-      }
-    ]
-  },
-  {
-    "type": "SELECT",
-    "name": "useOptimisticScenario",
-    "displayName": "Use Optimistic Scenario",
-    "macrosInSelect": true,
-    "selectItems": [
-      {
-        "value": true,
-        "displayValue": "true"
-      },
-      {
-        "value": false,
-        "displayValue": "false"
-      }
-    ],
-    "simpleValueType": true,
-    "help": "The tag will call gtmOnSuccess() without waiting for a response from the API. This will speed up sGTM response time however your tag will always return the status fired successfully even in case it is not.",
-    "defaultValue": false
   },
   {
     "type": "GROUP",
@@ -545,6 +551,10 @@ ___TEMPLATE_PARAMETERS___
                 "name": "name",
                 "type": "SELECT",
                 "selectItems": [
+                  {
+                    "value": "clientDedupeId",
+                    "displayValue": "clientDedupeId (Event ID for deduplication)"
+                  },
                   {
                     "value": "value",
                     "displayValue": "value"
@@ -1030,6 +1040,9 @@ function addMeasurementToken(data, eventData, mappedData) {
 
 function addEventDetailsData(data, eventData, mappedData) {
   const eventParameters = {};
+
+  const eventId = eventData.event_id || eventData.transaction_id;
+  if (eventId) eventParameters.clientDedupeId = eventId;
 
   if (eventData.currency) eventParameters.currencyCode = eventData.currency;
 
@@ -2715,7 +2728,8 @@ scenarios:
       ts: '1747945830456',
       MATCH_ID: 'userId',
       currencyCode: 'BRL',
-      value: '123.45'
+      value: '123.45',
+      clientDedupeId: '101509157~103116025~103130498'
     };
 
     mock('sendHttpGet', (requestUrl) => {
@@ -2992,6 +3006,9 @@ setup: "const JSON = require('JSON');\nconst Promise = require('Promise');\ncons
 
 
 ___NOTES___
+
+2026-05-08 - Change Notes:
+  - Add support for Event ID parameter for deduplication.
 
 Created on 6/11/2025, 12:20:30 PM
 
