@@ -1,6 +1,6 @@
 # Amazon Ads Tag for Google Tag Manager Server-Side
 
-The **Amazon Ads Tag for GTM Server-Side** enables you to send conversion events from your server directly to Amazon Ads. This enhances the accuracy and reliability of measurement, even when browser-based tracking falls short. It supports multiple event types, advanced user identity enrichment, regional consent frameworks, and detailed logging to both Console and BigQuery.
+The **Amazon Ads Tag for GTM Server-Side** enables you to send conversion events from your server directly to Amazon Ads. This enhances the accuracy and reliability of measurement, even when browser-based tracking falls short. It supports multiple event types, advanced user identity enrichment and regional consent frameworks.
 
 ## How to Use
 
@@ -24,7 +24,6 @@ The **Amazon Ads Tag for GTM Server-Side** enables you to send conversion events
 9. Configure cookie behaviors (optional) for storing **Measurement Tokens** (`amznAref`).
 10. Configure **3rd-party cookie syncing from the browser** for improved user matching.
 11. Activate **Optimistic Scenario** if you want the tag to return success without waiting for the Amazon API response.
-12. Enable **Logging** to Console and/or BigQuery for debugging and monitoring.
 
 ## Supported Event Name Setup Methods
 

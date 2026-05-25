@@ -735,112 +735,15 @@ ___TEMPLATE_PARAMETERS___
         "defaultValue": "optional"
       }
     ]
-  },
-  {
-    "displayName": "Logs Settings",
-    "name": "logsGroup",
-    "groupStyle": "ZIPPY_CLOSED",
-    "type": "GROUP",
-    "subParams": [
-      {
-        "type": "RADIO",
-        "name": "logType",
-        "radioItems": [
-          {
-            "value": "no",
-            "displayValue": "Do not log"
-          },
-          {
-            "value": "debug",
-            "displayValue": "Log to console during debug and preview"
-          },
-          {
-            "value": "always",
-            "displayValue": "Always log to console"
-          }
-        ],
-        "simpleValueType": true,
-        "defaultValue": "debug"
-      }
-    ]
-  },
-  {
-    "displayName": "BigQuery Logs Settings",
-    "name": "bigQueryLogsGroup",
-    "groupStyle": "ZIPPY_CLOSED",
-    "type": "GROUP",
-    "subParams": [
-      {
-        "type": "RADIO",
-        "name": "bigQueryLogType",
-        "radioItems": [
-          {
-            "value": "no",
-            "displayValue": "Do not log to BigQuery"
-          },
-          {
-            "value": "always",
-            "displayValue": "Log to BigQuery"
-          }
-        ],
-        "simpleValueType": true,
-        "defaultValue": "no"
-      },
-      {
-        "type": "GROUP",
-        "name": "logsBigQueryConfigGroup",
-        "groupStyle": "NO_ZIPPY",
-        "subParams": [
-          {
-            "type": "TEXT",
-            "name": "logBigQueryProjectId",
-            "displayName": "BigQuery Project ID",
-            "simpleValueType": true,
-            "help": "Optional.  \u003cbr\u003e\u003cbr\u003e  If omitted, it will be retrieved from the environment variable \u003cI\u003eGOOGLE_CLOUD_PROJECT\u003c/i\u003e where the server container is running. If the server container is running on Google Cloud, \u003cI\u003eGOOGLE_CLOUD_PROJECT\u003c/i\u003e will already be set to the Google Cloud project\u0027s ID."
-          },
-          {
-            "type": "TEXT",
-            "name": "logBigQueryDatasetId",
-            "displayName": "BigQuery Dataset ID",
-            "simpleValueType": true,
-            "valueValidators": [
-              {
-                "type": "NON_EMPTY"
-              }
-            ]
-          },
-          {
-            "type": "TEXT",
-            "name": "logBigQueryTableId",
-            "displayName": "BigQuery Table ID",
-            "simpleValueType": true,
-            "valueValidators": [
-              {
-                "type": "NON_EMPTY"
-              }
-            ]
-          }
-        ],
-        "enablingConditions": [
-          {
-            "paramName": "bigQueryLogType",
-            "paramValue": "always",
-            "type": "EQUALS"
-          }
-        ]
-      }
-    ]
   }
 ]
 
 
 ___SANDBOXED_JS_FOR_SERVER___
 
-const BigQuery = require('BigQuery');
 const computeEffectiveTldPlusOne = require('computeEffectiveTldPlusOne');
 const encodeUriComponent = require('encodeUriComponent');
 const getAllEventData = require('getAllEventData');
-const getContainerVersion = require('getContainerVersion');
 const getCookieValues = require('getCookieValues');
 const getEventData = require('getEventData');
 const getRequestHeader = require('getRequestHeader');
@@ -1177,7 +1080,7 @@ function buildAIPTokenConfig(data, eventData) {
       Name: 'Amazon',
       Type: 'Message',
       EventName: 'AIP Token Request',
-      Message: 'Request was not sent.',
+      Message: '🛑 [ERROR] AIP Token Request was not sent.',
       Reason: 'If GDPR consent is enabled, the TCFv2 consent string must be set.'
     });
     return data.gtmOnFailure();
@@ -1207,15 +1110,6 @@ function fetchAIPToken(data, eventData) {
   }
 
   const requestUrl = 'https://tk.amazon-adsystem.com/envelope';
-  log({
-    Name: 'Amazon',
-    Type: 'Request',
-    EventName: 'AIP Token Request',
-    RequestMethod: 'POST',
-    RequestUrl: requestUrl,
-    RequestBody: tokenConfig
-  });
-
   return sendHttpRequest(
     requestUrl,
     {
@@ -1225,15 +1119,6 @@ function fetchAIPToken(data, eventData) {
     JSON.stringify(tokenConfig)
   )
     .then((result) => {
-      log({
-        Name: 'Amazon',
-        Type: 'Response',
-        EventName: 'AIP Token Request',
-        ResponseStatusCode: result.statusCode,
-        ResponseHeaders: result.headers,
-        ResponseBody: result.body
-      });
-
       if (result.statusCode >= 200 && result.statusCode < 300 && result.body) {
         let parsedBody;
         parsedBody = JSON.parse(result.body);
@@ -1250,15 +1135,7 @@ function fetchAIPToken(data, eventData) {
         }
       }
     })
-    .catch((result) => {
-      log({
-        Name: 'Amazon',
-        Type: 'Message',
-        EventName: 'AIP Token Request',
-        Message: 'Request failed or timed out.',
-        Reason: JSON.stringify(result)
-      });
-    });
+    .catch((result) => {});
 }
 
 function getRequestBaseUrl(data) {
@@ -1281,7 +1158,7 @@ function validateParameterName(parameter, mappedData) {
     Name: 'Amazon',
     Type: 'Message',
     EventName: mappedData.event,
-    Message: 'Request was not sent.',
+    Message: '🛑 [ERROR] Request was not sent.',
     Reason: 'Parameter "' + parameter + '" is invalid: length greater than ' + maxLength
   });
 
@@ -1298,7 +1175,7 @@ function validateParameterValue(parameterValue, mappedData) {
     Name: 'Amazon',
     Type: 'Message',
     EventName: mappedData.event,
-    Message: 'Request was not sent.',
+    Message: '🛑 [ERROR] Request was not sent.',
     Reason: 'Parameter value "' + parameterValue + '" is invalid: length greater than ' + maxLength
   });
 
@@ -1357,27 +1234,8 @@ function getRequestUrlParameters(mappedData) {
 }
 
 function trackEvent(mappedData, requestUrl, tagId) {
-  log({
-    Name: 'Amazon',
-    Type: 'Request',
-    EventName: mappedData.event,
-    RequestMethod: 'GET',
-    RequestUrl: requestUrl,
-    Message: 'Tag ID: ' + tagId
-  });
-
   return sendHttpGet(requestUrl)
     .then((result) => {
-      log({
-        Name: 'Amazon',
-        Type: 'Response',
-        EventName: mappedData.event,
-        ResponseStatusCode: result.statusCode,
-        ResponseHeaders: result.headers,
-        ResponseBody: result.body,
-        Message: 'Tag ID: ' + tagId
-      });
-
       if (result.statusCode < 200 || result.statusCode >= 400) return false;
 
       if (
@@ -1396,7 +1254,7 @@ function trackEvent(mappedData, requestUrl, tagId) {
             Type: 'Message',
             EventName: mappedData.event,
             Message:
-              'The requestor does not support sending pixels from browser. 3rd party cookies will not be collected as a result. Tag ID: ' +
+              '⚠️ [WARNING] The requestor does not support sending pixels from browser. 3rd party cookies will not be collected as a result. Tag ID: ' +
               tagId
           });
         }
@@ -1405,14 +1263,6 @@ function trackEvent(mappedData, requestUrl, tagId) {
       return true;
     })
     .catch((result) => {
-      log({
-        Name: 'Amazon',
-        Type: 'Response',
-        EventName: mappedData.event,
-        Message: 'Request failed or timed out. Tag ID: ' + tagId,
-        Reason: JSON.stringify(result)
-      });
-
       return false;
     });
 }
@@ -1427,7 +1277,7 @@ function sendEventRequests(data, eventData, aipToken) {
       Name: 'Amazon',
       Type: 'Message',
       EventName: mappedData.event,
-      Message: 'Request was not sent.',
+      Message: '🛑 [ERROR] Request was not sent.',
       Reason: 'One or more required properties are missing: ' + missingParameters.join(' or ')
     });
 
@@ -1457,14 +1307,6 @@ function sendEventRequests(data, eventData, aipToken) {
       }
     })
     .catch((result) => {
-      log({
-        Name: 'Amazon',
-        Type: 'Message',
-        EventName: mappedData.event,
-        Message: 'Something went wrong.',
-        Reason: JSON.stringify(result)
-      });
-
       if (!useOptimisticScenario) return data.gtmOnFailure();
     });
 }
@@ -1610,91 +1452,8 @@ function isConsentGivenOrNotRequired(data, eventData) {
 }
 
 function log(rawDataToLog) {
-  const logDestinationsHandlers = {};
-  if (determinateIsLoggingEnabled()) logDestinationsHandlers.console = logConsole;
-  if (determinateIsLoggingEnabledForBigQuery()) logDestinationsHandlers.bigQuery = logToBigQuery;
-
   rawDataToLog.TraceId = getRequestHeader('trace-id');
-
-  const keyMappings = {
-    // No transformation for Console is needed.
-    bigQuery: {
-      Name: 'tag_name',
-      Type: 'type',
-      TraceId: 'trace_id',
-      EventName: 'event_name',
-      RequestMethod: 'request_method',
-      RequestUrl: 'request_url',
-      RequestBody: 'request_body',
-      ResponseStatusCode: 'response_status_code',
-      ResponseHeaders: 'response_headers',
-      ResponseBody: 'response_body'
-    }
-  };
-
-  for (const logDestination in logDestinationsHandlers) {
-    const handler = logDestinationsHandlers[logDestination];
-    if (!handler) continue;
-
-    const mapping = keyMappings[logDestination];
-    const dataToLog = mapping ? {} : rawDataToLog;
-
-    if (mapping) {
-      for (const key in rawDataToLog) {
-        const mappedKey = mapping[key] || key;
-        dataToLog[mappedKey] = rawDataToLog[key];
-      }
-    }
-
-    handler(dataToLog);
-  }
-}
-
-function logConsole(dataToLog) {
-  logToConsole(JSON.stringify(dataToLog));
-}
-
-function logToBigQuery(dataToLog) {
-  const connectionInfo = {
-    projectId: data.logBigQueryProjectId,
-    datasetId: data.logBigQueryDatasetId,
-    tableId: data.logBigQueryTableId
-  };
-
-  dataToLog.timestamp = getTimestampMillis();
-
-  ['request_body', 'response_headers', 'response_body'].forEach((p) => {
-    dataToLog[p] = JSON.stringify(dataToLog[p]);
-  });
-
-  BigQuery.insert(connectionInfo, [dataToLog], { ignoreUnknownValues: true });
-}
-
-function determinateIsLoggingEnabled() {
-  const containerVersion = getContainerVersion();
-  const isDebug = !!(
-    containerVersion &&
-    (containerVersion.debugMode || containerVersion.previewMode)
-  );
-
-  if (!data.logType) {
-    return isDebug;
-  }
-
-  if (data.logType === 'no') {
-    return false;
-  }
-
-  if (data.logType === 'debug') {
-    return isDebug;
-  }
-
-  return data.logType === 'always';
-}
-
-function determinateIsLoggingEnabledForBigQuery() {
-  if (data.bigQueryLogType === 'no') return false;
-  return data.bigQueryLogType === 'always';
+  logToConsole(JSON.stringify(rawDataToLog));
 }
 
 
@@ -1836,16 +1595,6 @@ ___SERVER_PERMISSIONS___
     },
     "clientAnnotations": {
       "isEditedByUser": true
-    },
-    "isRequired": true
-  },
-  {
-    "instance": {
-      "key": {
-        "publicId": "read_container_data",
-        "versionId": "1"
-      },
-      "param": []
     },
     "isRequired": true
   },
@@ -2061,67 +1810,6 @@ ___SERVER_PERMISSIONS___
               {
                 "type": 1,
                 "string": "https://tk.amazon-adsystem.com/envelope"
-              }
-            ]
-          }
-        }
-      ]
-    },
-    "clientAnnotations": {
-      "isEditedByUser": true
-    },
-    "isRequired": true
-  },
-  {
-    "instance": {
-      "key": {
-        "publicId": "access_bigquery",
-        "versionId": "1"
-      },
-      "param": [
-        {
-          "key": "allowedTables",
-          "value": {
-            "type": 2,
-            "listItem": [
-              {
-                "type": 3,
-                "mapKey": [
-                  {
-                    "type": 1,
-                    "string": "projectId"
-                  },
-                  {
-                    "type": 1,
-                    "string": "datasetId"
-                  },
-                  {
-                    "type": 1,
-                    "string": "tableId"
-                  },
-                  {
-                    "type": 1,
-                    "string": "operation"
-                  }
-                ],
-                "mapValue": [
-                  {
-                    "type": 1,
-                    "string": "*"
-                  },
-                  {
-                    "type": 1,
-                    "string": "*"
-                  },
-                  {
-                    "type": 1,
-                    "string": "*"
-                  },
-                  {
-                    "type": 1,
-                    "string": "write"
-                  }
-                ]
               }
             ]
           }
@@ -3007,9 +2695,11 @@ setup: "const JSON = require('JSON');\nconst Promise = require('Promise');\ncons
 
 ___NOTES___
 
+2026-05-25 Change Notes:
+ - Logging removal.
+
 2026-05-08 - Change Notes:
   - Add support for Event ID parameter for deduplication.
 
 Created on 6/11/2025, 12:20:30 PM
-
 
